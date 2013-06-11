@@ -2,11 +2,14 @@ package src;
 
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Scanner;
 import java.util.Vector;
 
 public class CirclesSeparation {
 	
 	private Vector<Circle> _circles=new Vector<Circle>();
+	
+	private Vector<Push> _pushes=new Vector<Push>();
 
 	public class Circle implements Comparable<Circle>{
 
@@ -15,7 +18,7 @@ public class CirclesSeparation {
 		private double _Ycoord=0.0;
 		private double _rad=0.0;
 		private double _mass=0.0;
-		private final double _eps=Double.MIN_VALUE;
+		private final double _eps=0.000000001;
 		
 		public Circle(int _order, double _Xcoord, double _Ycoord, double _rad,
 				double _mass) {
@@ -83,6 +86,7 @@ public class CirclesSeparation {
 				double k=(this._rad+o._rad+_eps)/(Math.sqrt(Math.pow(vx,2)+Math.pow(vy, 2)));
 				o.set_Xcoord(this._Xcoord+k*vx);
 				o.set_Ycoord(this._Ycoord+k*vy);
+				_pushes.add(new Push(this,o));
 			}
 		}
 		//Compares by order
@@ -107,38 +111,54 @@ public class CirclesSeparation {
 		}
 		public void set_Ycoord(double _Ycoord) {
 			this._Ycoord = _Ycoord;
+		}
+		public int get_order() {
+			return _order;
 		}		
 	}
 
-	public double[] minimumWork(double[] x, double[] y, double[] r, double[] m){
-		int i=0;
-		Circle aux=null;
-		Vector<Circle> placedCircles=null;
-		double[] toRet=null;
-		double[][] intersections=null;
-		initializeCircles(x, y, r, m);
-		double dist, min_dist, xmin, ymin;
-		dist=min_dist=xmin=ymin=101;						
-		for (Circle o : _circles) {
-			if(i==0)aux=o;							
-			else if(i==1)aux.push(o);				
-			else{
-				placedCircles=new Vector<Circle>();
-				for (int j = 0; j < i; j++)placedCircles.add(_circles.elementAt(j));
-				intersections=intersections(placedCircles, o._rad);				
-				for (int j=0; j < intersections.length; j++) {
-					dist=o.distance(intersections[j][0], intersections[j][1]);
-					if(dist<min_dist){
-						min_dist=dist;
-						xmin=intersections[j][0];
-						ymin=intersections[j][1];
-					}
-				}
-				o.set_Xcoord(xmin);
-				o.set_Ycoord(ymin);
-			}
-			i++;
+	public class Push{
+		
+		private Circle _pushes;
+		private Circle _pushed;
+		
+		public Push(Circle o, Circle o2){
+			_pushes=o;
+			_pushed=o2;
 		}
+		
+		public boolean samePush(Push p){
+			boolean toRet=false;
+			if(this._pushes.get_order()==p._pushes.get_order() &&
+			   this._pushed.get_order()==p._pushed.get_order())toRet=true;
+			return toRet;
+		}
+		
+		
+	}
+	
+	/*
+	public static void main(String[]a){
+		int n;
+		double[] x,y,r,m,ret;
+		Scanner sc=new Scanner(System.in);
+		CirclesSeparation cs=new CirclesSeparation();
+		n=Integer.parseInt(sc.nextLine());
+		x=y=r=m=ret=new double[n];
+		for (int i = 0; i < x.length; i++)x[i]=Double.parseDouble(sc.nextLine());
+		for (int i = 0; i < y.length; i++)y[i]=Double.parseDouble(sc.nextLine());
+		for (int i = 0; i < r.length; i++)r[i]=Double.parseDouble(sc.nextLine());
+		for (int i = 0; i < m.length; i++)m[i]=Double.parseDouble(sc.nextLine());
+		ret=cs.minimumWork(x, y, r, m);
+		for (int i = 0; i < ret.length; i++)System.out.println(ret[i]);
+	}
+	*/
+	
+	public double[] minimumWork(double[] x, double[] y, double[] r, double[] m){		
+		Circle aux=new Circle(0,0,0,0,0);		
+		double[] toRet=null;		
+		initializeCircles(x, y, r, m);
+		while(overlapping());
 		Collections.sort(_circles, aux.CircleByOrder);
 		toRet=new double[_circles.size()*2];
 		int j=0;
@@ -157,7 +177,7 @@ public class CirclesSeparation {
 		for (Circle o : v) {
 			for (Circle o2 : v) {
 				if(!o.equals(o2) && o.CircleByOrder.compare(o, o2)>0){					
-					toRet=o.intersection(new Circle(o, rad+o._eps), new Circle(o2, rad+o2._eps));
+					toRet=o.intersection(new Circle(o, rad), new Circle(o2, rad));
 					if(toRet!=null){
 						inters.add(toRet[0][0]);
 						inters.add(toRet[0][1]);						
@@ -167,11 +187,13 @@ public class CirclesSeparation {
 				}
 			}
 		}
-		toRet=new double[inters.size()/2][2];		
-		for (int i = 0; i < toRet.length; i++) {
-			toRet[i][0]=inters.elementAt(2*i);
-			toRet[i][1]=inters.elementAt(2*i+1);
-		}
+		if(inters.size()!=0){
+			toRet=new double[inters.size()/2][2];		
+			for (int i = 0; i < toRet.length; i++) {
+				toRet[i][0]=inters.elementAt(2*i);
+				toRet[i][1]=inters.elementAt(2*i+1);
+			}
+		}		
 		return toRet;
 	}
 
@@ -183,4 +205,30 @@ public class CirclesSeparation {
 		Collections.reverse(_circles);
 	}
 	
+	private boolean overlapping(){		
+		boolean toRet=false;
+		for (Circle o : _circles) {
+			for (Circle o2 : _circles) {
+				if(!o.equals(o2)){
+					if(o.overlaps(o2)){
+						toRet=true;
+						if(!yetPushed(new Push(o, o2)))o.push(o2);
+						else{
+							o2.set_Xcoord(o2._Xcoord+(Math.random()-0.0)*0.05);
+							o2.set_Ycoord(o2._Ycoord+(Math.random()-0.0)*0.05);
+						}						
+					}
+				}					
+			}
+		}
+		return toRet;
+	}
+	
+	private boolean yetPushed(Push p2){
+		boolean toRet=false;
+		for (Push p : _pushes) {
+			if(p.samePush(p2))toRet=true;
+		}
+		return toRet;
+	}
 }
