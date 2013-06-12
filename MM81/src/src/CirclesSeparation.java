@@ -18,7 +18,7 @@ public class CirclesSeparation {
 		private double _Ycoord=0.0;
 		private double _rad=0.0;
 		private double _mass=0.0;
-		private final double _eps=0.000000001;
+		private final double _eps=0.0000000001;
 		
 		public Circle(int _order, double _Xcoord, double _Ycoord, double _rad,
 				double _mass) {
@@ -61,6 +61,8 @@ public class CirclesSeparation {
 		//Devuelve null para dos circulos tangentes.
 		public double[][] intersection(Circle o1, Circle o2){
 			double[][] toRet=null;
+			Double test=null;
+			boolean anulate=false;
 			if(o1.overlaps(o2)){
 				toRet=new double[2][2];
 				double p,q,r,a,b,c;
@@ -76,16 +78,25 @@ public class CirclesSeparation {
 				toRet[1][1]=(-b-Math.sqrt(Math.pow(b, 2)-4*a*c))/(2*a);
 				toRet[0][0]=(p+q*toRet[0][1])/r;
 				toRet[1][0]=(p+q*toRet[1][1])/r;
+				test=new Double(toRet[0][0]);
+				if(test.isNaN())anulate=true;
+				test=new Double(toRet[0][1]);
+				if(test.isNaN())anulate=true;
+				test=new Double(toRet[1][0]);
+				if(test.isNaN())anulate=true;
+				test=new Double(toRet[1][1]);
+				if(test.isNaN())anulate=true;
+				if(anulate)toRet=null;
 			}
 			return toRet;
 		}
 		public void push(Circle o){
-			if(this.overlaps(o)){
+			if(this.overlaps(o)){				
 				double vx=o._Xcoord-this._Xcoord;
 				double vy=o._Ycoord-this._Ycoord;
-				double k=(this._rad+o._rad+_eps)/(Math.sqrt(Math.pow(vx,2)+Math.pow(vy, 2)));
-				o.set_Xcoord(this._Xcoord+k*vx);
-				o.set_Ycoord(this._Ycoord+k*vy);
+				double k=(this._rad+o._rad+_eps)/(Math.sqrt(Math.pow(vx,2)+Math.pow(vy, 2)));				
+				o._Xcoord=this._Xcoord+k*vx;
+				o._Ycoord=this._Ycoord+k*vy;
 				_pushes.add(new Push(this,o));
 			}
 		}
@@ -104,12 +115,8 @@ public class CirclesSeparation {
 			else toRet=-1;
 			return toRet;
 		}
-		public void set_Xcoord(double _Xcoord) {
-			this._Xcoord = _Xcoord;
-		}
-		public void set_Ycoord(double _Ycoord) {
-			this._Ycoord = _Ycoord;
-		}
+		
+			
 		public int get_order() {
 			return _order;
 		}		
@@ -135,26 +142,71 @@ public class CirclesSeparation {
 		
 	}
 		
-	public class Intersection{
+	public class Intersection implements Comparable<Intersection>{
 		
-		private double _x, _y;
-		private boolean _outer=true;
+		private double _x, _y, _distance;
+		private boolean _outer=true;		
 		
 		public Intersection(double x, double y){
 			_x=x;
 			_y=y;
-		}			
+			_distance=100;
+		}				
+
+		public int compareTo(Intersection o) {		
+			int toRet=0;
+			if(this._distance<o._distance)toRet=-1;
+			else if(this._distance>o._distance)toRet=1;
+			return toRet;
+		}
+		
+		
 	}
 	
 	public double[] minimumWork(double[] x, double[] y, double[] r, double[] m){	
-		int i=0;
+		int i=0, k=0;
 		Vector<Circle> placedCircles=null;
 		Vector<Intersection> intersections=null;
 		Circle aux=new Circle(0,0,0,0,0);		
 		double[] toRet=null;		
-		initializeCircles(x, y, r, m);
-		while(overlapping());				
+		initializeCircles(x, y, r, m);						
+		for (Circle o : _circles) {
+			if(i==0)aux=o;							
+			else if(i==1)aux.push(o);				
+			else{
+				placedCircles=new Vector<Circle>();
+				for (int j = 0; j < i; j++)placedCircles.add(_circles.elementAt(j));				
+				aux=overlapped(placedCircles, o);
+				if(aux==null)k++;			
+				else{
+					intersections=intersections(placedCircles, o._rad+o._eps);
+					intersections=getOuterIntersections(intersections);
+					for (Intersection in : intersections) {
+						in._distance=o.distance(in._x, in._y);
+					}
+					Collections.sort(intersections);					
+					for (Intersection in : intersections) {						
+						if(overlapped(placedCircles, 
+								new Circle(-1, in._x, in._y, o._rad, o._mass))==null){							
+							o._Xcoord=in._x;
+							o._Ycoord=in._y;
+							break;
+						}						
+					}
+				}
+			}			
+			i++;
+		}		
+		//while(overlapping());
+		aux=new Circle(0,0,0,0,0);
 		Collections.sort(_circles, aux.CircleByOrder);
+		for (Circle c : _circles) {
+			for (Circle c2 : _circles) {
+				if(!c.equals(c2) && aux.CircleByOrder.compare(c, c2)>0){
+					if(c.overlaps(c2))System.out.println(c._order+" - "+c2._order);
+				}
+			}
+		}
 		toRet=new double[_circles.size()*2];
 		int j=0;
 		for (Circle o : _circles) {
@@ -185,13 +237,12 @@ public class CirclesSeparation {
 	//No se si esto funcionara, porque el toArray deberia poder inferir el tipo de toRet;
  	private Vector<Intersection> intersections(Vector<Circle> v, double rad) {
 		double[][] aux;
-		Vector<Intersection> toRet=new Vector<Intersection>();
-		Vector<Double> inters=new Vector<Double>();
+		Vector<Intersection> toRet=new Vector<Intersection>();		
 		for (Circle o : v) {
 			for (Circle o2 : v) {
 				if(!o.equals(o2) && o.CircleByOrder.compare(o, o2)>0){					
 					aux=o.intersection(new Circle(o, rad), new Circle(o2, rad));
-					if(aux!=null){
+					if(aux!=null){						
 						toRet.add(new Intersection(aux[0][0],aux[0][1]));		
 						toRet.add(new Intersection(aux[1][0],aux[1][1]));														
 					}					
@@ -211,19 +262,42 @@ public class CirclesSeparation {
 	
 	private boolean overlapping(){		
 		boolean toRet=false;
+		double push;
 		for (Circle o : _circles) {
 			for (Circle o2 : _circles) {
-				if(!o.equals(o2)){
+				if(!o.equals(o2) && o.compareTo(o2)>=0){
 					if(o.overlaps(o2)){
 						toRet=true;
 						if(!yetPushed(new Push(o, o2)))o.push(o2);
 						else{
-							o2.set_Xcoord(o2._Xcoord+(Math.random()-0.1)*0.05);
-							o2.set_Ycoord(o2._Ycoord+(Math.random()-0.1)*0.05);
+							push=Math.random()*0.2;							
+							if(o2._Xcoord>0.5 && o2._Ycoord>0.5){
+								o2._Xcoord=o2._Xcoord+push;
+								o2._Ycoord=o2._Ycoord+push;
+							}else if(o2._Xcoord<0.5 && o2._Ycoord>0.5){
+								o2._Xcoord=o2._Xcoord-push;
+								o2._Ycoord=o2._Ycoord+push;
+							}else if(o2._Xcoord>0.5 && o2._Ycoord<0.5){
+								o2._Xcoord=o2._Xcoord+push;
+								o2._Ycoord=o2._Ycoord-push;
+							}else{
+								o2._Xcoord=o2._Xcoord-push;
+								o2._Ycoord=o2._Ycoord-push;
+							}		
 						}						
 					}
 				}					
 			}
+		}
+		return toRet;
+	}
+	
+	private Circle overlapped(Vector<Circle> c, Circle o2){		
+		Circle toRet=null;		
+		for (Circle o : c) {						
+				if(o.overlaps(o2)){
+					return o;												
+				}											
 		}
 		return toRet;
 	}
