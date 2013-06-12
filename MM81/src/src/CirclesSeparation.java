@@ -91,14 +91,12 @@ public class CirclesSeparation {
 		}
 		//Compares by order
 		public Comparator<Circle> CircleByOrder 
-        = new Comparator<Circle>() {
-			@Override
+        = new Comparator<Circle>() {			
 	 		public int compare(Circle o1, Circle o2) {			
 				return o1._order-o2._order;
 			}
 		};
-		//Compares by mass
-		@Override		
+		//Compares by mass		
 		public int compareTo(Circle o) {
 			int toRet=0;
 			if(this._mass>o._mass)toRet=1;
@@ -136,29 +134,26 @@ public class CirclesSeparation {
 		
 		
 	}
-	
-	/*
-	public static void main(String[]a){
-		int n;
-		double[] x,y,r,m,ret;
-		Scanner sc=new Scanner(System.in);
-		CirclesSeparation cs=new CirclesSeparation();
-		n=Integer.parseInt(sc.nextLine());
-		x=y=r=m=ret=new double[n];
-		for (int i = 0; i < x.length; i++)x[i]=Double.parseDouble(sc.nextLine());
-		for (int i = 0; i < y.length; i++)y[i]=Double.parseDouble(sc.nextLine());
-		for (int i = 0; i < r.length; i++)r[i]=Double.parseDouble(sc.nextLine());
-		for (int i = 0; i < m.length; i++)m[i]=Double.parseDouble(sc.nextLine());
-		ret=cs.minimumWork(x, y, r, m);
-		for (int i = 0; i < ret.length; i++)System.out.println(ret[i]);
+		
+	public class Intersection{
+		
+		private double _x, _y;
+		private boolean _outer=true;
+		
+		public Intersection(double x, double y){
+			_x=x;
+			_y=y;
+		}			
 	}
-	*/
 	
-	public double[] minimumWork(double[] x, double[] y, double[] r, double[] m){		
+	public double[] minimumWork(double[] x, double[] y, double[] r, double[] m){	
+		int i=0;
+		Vector<Circle> placedCircles=null;
+		Vector<Intersection> intersections=null;
 		Circle aux=new Circle(0,0,0,0,0);		
 		double[] toRet=null;		
 		initializeCircles(x, y, r, m);
-		while(overlapping());
+		while(overlapping());				
 		Collections.sort(_circles, aux.CircleByOrder);
 		toRet=new double[_circles.size()*2];
 		int j=0;
@@ -170,30 +165,39 @@ public class CirclesSeparation {
 		}
 		return toRet;
 	}
+	private Vector<Intersection> getOuterIntersections(Vector<Intersection> inters){
+		Vector<Intersection> toRet=new Vector<Intersection>();
+		for (Intersection i : inters) {
+			if(i._outer)toRet.add(i);
+		}
+		return toRet;
+	}
+	private void setOuterIntersections(Vector<Intersection> i, Vector<Circle> c){
+		for (Intersection inters : i) {
+			for (Circle circ : c) {
+				if(circ.distance(inters._x, inters._y)<=circ._rad){
+					inters._outer=false;;
+					break;
+				}
+			}
+		}
+	}
 	//No se si esto funcionara, porque el toArray deberia poder inferir el tipo de toRet;
-	private double[][] intersections(Vector<Circle> v, double rad) {
-		double[][] toRet=null;
+ 	private Vector<Intersection> intersections(Vector<Circle> v, double rad) {
+		double[][] aux;
+		Vector<Intersection> toRet=new Vector<Intersection>();
 		Vector<Double> inters=new Vector<Double>();
 		for (Circle o : v) {
 			for (Circle o2 : v) {
 				if(!o.equals(o2) && o.CircleByOrder.compare(o, o2)>0){					
-					toRet=o.intersection(new Circle(o, rad), new Circle(o2, rad));
-					if(toRet!=null){
-						inters.add(toRet[0][0]);
-						inters.add(toRet[0][1]);						
-						inters.add(toRet[1][0]);
-						inters.add(toRet[1][1]);						
+					aux=o.intersection(new Circle(o, rad), new Circle(o2, rad));
+					if(aux!=null){
+						toRet.add(new Intersection(aux[0][0],aux[0][1]));		
+						toRet.add(new Intersection(aux[1][0],aux[1][1]));														
 					}					
 				}
 			}
-		}
-		if(inters.size()!=0){
-			toRet=new double[inters.size()/2][2];		
-			for (int i = 0; i < toRet.length; i++) {
-				toRet[i][0]=inters.elementAt(2*i);
-				toRet[i][1]=inters.elementAt(2*i+1);
-			}
-		}		
+		}			
 		return toRet;
 	}
 
@@ -214,8 +218,8 @@ public class CirclesSeparation {
 						toRet=true;
 						if(!yetPushed(new Push(o, o2)))o.push(o2);
 						else{
-							o2.set_Xcoord(o2._Xcoord+(Math.random()-0.0)*0.05);
-							o2.set_Ycoord(o2._Ycoord+(Math.random()-0.0)*0.05);
+							o2.set_Xcoord(o2._Xcoord+(Math.random()-0.1)*0.05);
+							o2.set_Ycoord(o2._Ycoord+(Math.random()-0.1)*0.05);
 						}						
 					}
 				}					
