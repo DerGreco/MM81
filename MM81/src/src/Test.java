@@ -18,7 +18,7 @@ import javax.swing.JPanel;
 public class Test {
 
 	public static String execCommand = null;
-    public static long seed = 1;
+    public static long seed = 3;
     public static boolean vis = true;
     public static int size = 700;
     

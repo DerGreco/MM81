@@ -164,7 +164,7 @@ public class CirclesSeparation {
 	}
 	
 	public double[] minimumWork(double[] x, double[] y, double[] r, double[] m){	
-		int i=0, k=0;
+		int i=0;		
 		Vector<Circle> placedCircles=null;
 		Vector<Intersection> intersections=null;
 		Circle aux=new Circle(0,0,0,0,0);		
@@ -173,37 +173,31 @@ public class CirclesSeparation {
 		for (Circle o : _circles) {
 			if(i==0)aux=o;							
 			else if(i==1)aux.push(o);				
-			else{
+			else{				
 				placedCircles=new Vector<Circle>();
 				for (int j = 0; j < i; j++)placedCircles.add(_circles.elementAt(j));				
 				aux=overlapped(placedCircles, o);
-				if(aux==null)k++;			
+				if(aux==null);			
 				else{
-					intersections=intersections(placedCircles, o._rad+o._eps);
-					intersections=getOuterIntersections(intersections);
-					for (Intersection in : intersections) {
-						in._distance=o.distance(in._x, in._y);
-					}
-					Collections.sort(intersections);					
-					for (Intersection in : intersections) {						
-						if(overlapped(placedCircles, 
-								new Circle(-1, in._x, in._y, o._rad, o._mass))==null){							
-							o._Xcoord=in._x;
-							o._Ycoord=in._y;
-							break;
-						}						
-					}
+					placeCircle(placedCircles, o, i);
 				}
 			}			
 			i++;
-		}		
-		//while(overlapping());
+		}				
 		aux=new Circle(0,0,0,0,0);
 		Collections.sort(_circles, aux.CircleByOrder);
 		for (Circle c : _circles) {
 			for (Circle c2 : _circles) {
 				if(!c.equals(c2) && aux.CircleByOrder.compare(c, c2)>0){
-					if(c.overlaps(c2))System.out.println(c._order+" - "+c2._order);
+					if(c.overlaps(c2)){
+						if(c._mass<c2._mass){
+							//OJO, placedCircles contiene todos, incluido el que se mueve
+							//en teoria no afecta a la solucion.
+							placeCircle(placedCircles, c, -1);
+						}else{
+							placeCircle(placedCircles, c2, -1);
+						}
+					}
 				}
 			}
 		}
@@ -217,6 +211,33 @@ public class CirclesSeparation {
 		}
 		return toRet;
 	}
+	
+	private void placeCircle(Vector<Circle> placedCircles, Circle o, int i){
+		boolean placed=false;		
+		Vector<Intersection> intersections=null;
+		Circle aux=new Circle(0,0,0,0,0);
+		intersections=intersections(placedCircles, o._rad+2*o._eps);
+		intersections=getOuterIntersections(intersections);
+		for (Intersection in : intersections) {
+			in._distance=o.distance(in._x, in._y);
+		}
+		Collections.sort(intersections);					
+		for (Intersection in : intersections) {						
+			if(overlapped(placedCircles, 
+					new Circle(-1, in._x, in._y, o._rad, o._mass))==null){							
+				o._Xcoord=in._x;
+				o._Ycoord=in._y;
+				placed=true;
+				break;
+			}						
+		}
+		if(!placed){
+			aux=_circles.elementAt(i);
+			_circles.setElementAt(_circles.elementAt(i+1), i);
+			_circles.setElementAt(aux, i+1);
+		}
+	}
+	
 	private Vector<Intersection> getOuterIntersections(Vector<Intersection> inters){
 		Vector<Intersection> toRet=new Vector<Intersection>();
 		for (Intersection i : inters) {
