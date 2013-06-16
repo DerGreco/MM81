@@ -5,10 +5,12 @@ import java.awt.Graphics;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.security.SecureRandom;
+import java.util.Date;
 import java.util.Random;
 
 import javax.swing.JFrame;
@@ -17,26 +19,30 @@ import javax.swing.JPanel;
 
 public class Test {
 
-	public static String execCommand = null;
-    public static long seed = 3;
-    public static boolean vis = true;
-    public static int size = 700;
+	public  String execCommand = null;
+    public  long seed = 4;
+    public  boolean vis = true;
+    public  int size = 1000;
     
-    public static CirclesSeparation cs=new CirclesSeparation();
+    public  CirclesSeparation cs=new CirclesSeparation();
 
-    public static final int MIN_N = 50;
-    public static final int MAX_N = 500;
+    public  final int MIN_N = 50;
+    public  final int MAX_N = 500;
 
-    public static final double MIN_R_FACTOR = 1.0;
-    public static final double MAX_R_FACTOR = 5.0;
+    public  final double MIN_R_FACTOR = 1.0;
+    public  final double MAX_R_FACTOR = 5.0;
 
-    public static final double MAX_COORD = 100.0;
+    public  final double MAX_COORD = 100.0;
 
     Drawer drawer;
     int N;
     double[] x, y, r, m, res;
     double[] fx, fy;
 
+    public Test(){
+    	x=y=r=m=res=fx=fy=new double[]{};
+    }
+    
     class Drawer extends JFrame {
         public static final int PADDING = 50;
         double minX, maxX, minY, maxY, scale;
@@ -156,8 +162,9 @@ public class Test {
             r[i] = maxR * rnd.nextDouble();
             m[i] = rnd.nextDouble();
         }
-
+        double time=new Date().getTime();
         res=cs.minimumWork(x, y, r, m);
+        System.out.println("Time: "+(new Date().getTime()-time)/1000);
         fx=new double[res.length/2];
         fy=new double[res.length/2];
         for (int i = 0; i < fx.length; i++) {
@@ -198,9 +205,23 @@ public class Test {
     }
     
 
-    public static void main(String[] args) {        
-        Test t = new Test();        
-            double score = t.runTest();            
+    public static void main(String[] args) throws FileNotFoundException {       	
+    	PrintWriter pw=new PrintWriter("C:\\temp\\out10.csv");    	
+    	for (int i = 0; i < 10; i++) {    		
+    		for (int j = 0; j < 10; j++) {    	
+    			Test t = new Test();    		
+        		t.seed=i+1;
+        		t.cs.setWm(j);
+        		t.cs.setWr(10);
+                double score = t.runTest();  
+                pw.print(t.seed+",");
+                pw.print(j+",");
+                pw.print(t.cs.getWr()+",");
+                pw.println(score);                                
+			}    		
+		}
+    	pw.close();
+    	System.out.println("Finish");
     }
 }
 
