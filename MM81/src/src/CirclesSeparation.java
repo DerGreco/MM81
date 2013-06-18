@@ -6,8 +6,8 @@ import java.util.Vector;
 
 public class CirclesSeparation {
     
-    private Vector<Circle> _circles=new Vector<Circle>();     
-    private double wm, wr;
+    private Vector<Circle> _circles=new Vector<Circle>();   
+    private double wm, wr;    
 
     public class Circle implements Comparable<Circle>{
 
@@ -17,7 +17,6 @@ public class CirclesSeparation {
         private double _rad=0.0;
         private double _mass=0.0;
         private final double _eps=0.0000000001;
-        
         
         public Circle(int _order, double _Xcoord, double _Ycoord, double _rad,
                 double _mass) {
@@ -90,16 +89,18 @@ public class CirclesSeparation {
         };
         public Comparator<Circle> CircleByRadius 
         = new Comparator<Circle>() {            
-             public int compare(Circle o1, Circle o2) { 
-            	 double maxR=Math.sqrt(5/_circles.size());
-                 if(o1._rad/maxR-o1._mass<o2._rad/maxR-o2._mass)return -1;
+             public int compare(Circle o1, Circle o2) {        
+                 if(o1._rad-o1._mass<o2._rad-o2._mass)return -1;
                  else if(o1._rad==o2._rad)return 0;
                  else return 1;
             }
         };
-        //Compares by mass        
+      //Compares by mass        
         public int compareTo(Circle o) {
-            int toRet=0;                        
+            int toRet=0;  
+            wm=1;
+            wr=5;
+            double maxR=Math.sqrt(5/_circles.size());
             if(wm*this._mass-wr*this._rad>wm*o._mass-wr*o._rad)toRet=1;
             else if(this._mass==o._mass)toRet=0;
             else toRet=-1;
@@ -108,7 +109,7 @@ public class CirclesSeparation {
                     
         public int get_order() {
             return _order;
-        }		    
+        }        
     }
             
     public class Intersection implements Comparable<Intersection>{
@@ -133,6 +134,7 @@ public class CirclesSeparation {
     
     public double[] minimumWork(double[] x, double[] y, double[] r, double[] m){    
         int i=0;        
+        double score=0;
         Vector<Circle> placedCircles=new Vector<Circle>();
         Vector<Circle> toPlace=new Vector<Circle>();
         Circle aux=new Circle(0,0,0,0,0);        
@@ -149,11 +151,10 @@ public class CirclesSeparation {
                 }
             }            
             i++;
-        }
-        System.out.println("Placed: "+placedCircles.size());
+        }           
         for (Circle c : toPlace) {
             placedCircles=placeCircle(placedCircles, c);
-        }
+        }        
         aux=new Circle(0,0,0,0,0);
         Collections.sort(_circles, aux.CircleByOrder);        
         toRet=new double[_circles.size()*2];
@@ -163,6 +164,9 @@ public class CirclesSeparation {
             j++;
             toRet[j]=o._Ycoord;
             j++;
+        }
+        for (int k=0; k < _circles.size(); k++) {
+            score += m[k] * Math.sqrt((x[k] - toRet[2*k]) * (x[k] - toRet[2*k]) + (y[k] - toRet[2*k+1]) * (y[k] - toRet[2*k+1]));
         }
         return toRet;
     }
@@ -188,10 +192,10 @@ public class CirclesSeparation {
                             o._Xcoord=in._x;
                             o._Ycoord=in._y;
                             placedCircles.add(o);                            
-                            break;
+                            return placedCircles;
                         }                        
                     }                    
-                }
+                }else return placedCircles;
             }
         }
         return placedCircles;
@@ -233,7 +237,7 @@ public class CirclesSeparation {
         for (int i = 0; i < m.length; i++) {
             _circles.add(new Circle(i, x[i], y[i], r[i], m[i]));
         }
-        Collections.sort(_circles);   
+        Collections.sort(_circles);       
         Collections.reverse(_circles);
     }
     
@@ -241,7 +245,7 @@ public class CirclesSeparation {
         boolean toRet=false;
         for (Circle o : c) {
             for (Circle o2 : c) {
-                if(!o.equals(o2) && o.compareTo(o2)>=0){
+                if(!o.equals(o2) && o.CircleByOrder.compare(o, o2)<0){
                     if(o.overlaps(o2)){
                         toRet=true;                                                
                     }
@@ -259,20 +263,21 @@ public class CirclesSeparation {
                 }                                            
         }
         return toRet;
-    }        
-    
-    public void setWm(double wm) {
-		this.wm = wm;
-	}
-	public void setWr(double wr) {
-		this.wr = wr;
-	}
+    }
 
 	public double getWm() {
 		return wm;
 	}
 
+	public void setWm(double wm) {
+		this.wm = wm;
+	}
+
 	public double getWr() {
 		return wr;
-	}   
+	}
+
+	public void setWr(double wr) {
+		this.wr = wr;
+	}        
 }

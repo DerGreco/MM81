@@ -21,7 +21,7 @@ public class Test {
 
 	public  String execCommand = null;
     public  long seed = 4;
-    public  boolean vis = true;
+    public  boolean vis = false;
     public  int size = 1000;
     
     public  CirclesSeparation cs=new CirclesSeparation();
@@ -164,7 +164,7 @@ public class Test {
         }
         double time=new Date().getTime();
         res=cs.minimumWork(x, y, r, m);
-        System.out.println("Time: "+(new Date().getTime()-time)/1000);
+        //System.out.println("Time: "+(new Date().getTime()-time)/1000);
         fx=new double[res.length/2];
         fy=new double[res.length/2];
         for (int i = 0; i < fx.length; i++) {
@@ -187,7 +187,7 @@ public class Test {
             for (int j=i+1; j < N; j++) {
                 if ((fx[i] - fx[j]) * (fx[i] - fx[j]) + (fy[i] - fy[j]) * (fy[i] - fy[j]) < (r[i] + r[j]) * (r[i] + r[j])) {
                     System.err.println("ERROR: in your solution, circles " + i + " and " + j + " (0-based) overlap.");
-                    //return -1.0;
+                    return -1.0;
                 }
             }
         }
@@ -196,7 +196,7 @@ public class Test {
         for (int i=0; i < N; i++) {
             score += m[i] * Math.sqrt((x[i] - fx[i]) * (x[i] - fx[i]) + (y[i] - fy[i]) * (y[i] - fy[i]));
         }
-
+        
         if (vis) {
             drawer = new Drawer();
         }
@@ -205,22 +205,27 @@ public class Test {
     }
     
 
-    public static void main(String[] args) throws FileNotFoundException {       	
-    	PrintWriter pw=new PrintWriter("C:\\temp\\out10.csv");    	
-    	for (int i = 0; i < 10; i++) {    		
-    		for (int j = 0; j < 10; j++) {    	
-    			Test t = new Test();    		
-        		t.seed=i+1;
-        		t.cs.setWm(j);
-        		t.cs.setWr(10);
-                double score = t.runTest();  
-                pw.print(t.seed+",");
-                pw.print(j+",");
-                pw.print(t.cs.getWr()+",");
-                pw.println(score);                                
+    public static void main(String[] args) throws FileNotFoundException {   
+    	double score=0;
+    	/*
+    	PrintWriter pw=new PrintWriter("C:\\temp\\out.csv");    	
+    	for (int i = 1; i < 10; i++) {        		
+    		for (int j = 1; j < 10; j++) {  
+    			
+    			for (int k = 1; k < 11; k++) {
+    				Test t = new Test();    		
+            		t.seed=k;
+            		t.cs.setWm(i);
+            		t.cs.setWr(j);
+                                                                                   
+				} 
+    			pw.println("Mass: "+i+" rad: "+j+" score: "+score);    			
 			}    		
 		}
     	pw.close();
+    	*/    	
+    	Test t = new Test();
+    	score += t.runTest();
     	System.out.println("Finish");
     }
 }
